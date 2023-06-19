@@ -100,11 +100,18 @@ func (e *engine) matchBuyOrder(order *Order) {
 	}
 	iter := processingOrders.Iterator()
 
+	// We need to close orders after the main loop to not break the iterator
+	var ordersToClose []struct {
+		order  *Order
+		amount int
+	}
+
 mainLoop:
 	for iter.Next() {
 		oppositeOrderQueue := iter.Value().([]*Order)
 		for _, oppositeOrder := range oppositeOrderQueue {
-			if oppositeOrder.Price > order.Price {
+			if (order.Type == OrderTypeSell && oppositeOrder.Price < order.Price) ||
+				(order.Type == OrderTypeBuy && oppositeOrder.Price > order.Price) {
 				break mainLoop
 			}
 
@@ -113,9 +120,23 @@ mainLoop:
 				closingAmount = oppositeOrder.RemainingAmount()
 			}
 
-			e.closeAmountInOrder(oppositeOrder, closingAmount)
+			ordersToClose = append(ordersToClose, struct {
+				order  *Order
+				amount int
+			}{
+				order:  oppositeOrder,
+				amount: closingAmount,
+			})
 			e.closeAmountInOrder(order, closingAmount)
+
+			if closingAmount == 0 {
+				break mainLoop
+			}
 		}
+	}
+
+	for _, orderToClose := range ordersToClose {
+		e.closeAmountInOrder(orderToClose.order, orderToClose.amount)
 	}
 }
 

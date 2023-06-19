@@ -254,6 +254,31 @@ func TestEngine_FullMatch_OnBuy(t *testing.T) {
 	assert.Equal(t, 5, sellOrder.CompletedAmount)
 }
 
+func TestEngine_PartialMatch_OnSell2(t *testing.T) {
+	engine := New()
+
+	buyOrder1 := engine.AddLimitOrder(OrderTypeBuy, 51, 2)
+	buyOrder2 := engine.AddLimitOrder(OrderTypeBuy, 50, 1)
+	buyOrder3 := engine.AddLimitOrder(OrderTypeBuy, 49, 10)
+	sellOrder := engine.AddLimitOrder(OrderTypeSell, 50, 5)
+
+	assert.Len(t, engine.AskOrders(), 1)
+	assert.Len(t, engine.BidOrders(), 1)
+
+	assert.Equal(t, OrderStatusCompleted, buyOrder1.Status)
+	assert.Equal(t, OrderStatusCompleted, buyOrder2.Status)
+	assert.Equal(t, OrderStatusPending, buyOrder3.Status)
+	assert.Equal(t, OrderStatusPartiallyCompleted, sellOrder.Status)
+
+	assert.Equal(t, 10, buyOrder3.RemainingAmount())
+	assert.Equal(t, 2, sellOrder.RemainingAmount())
+
+	assert.Equal(t, 2, buyOrder1.CompletedAmount)
+	assert.Equal(t, 1, buyOrder2.CompletedAmount)
+	assert.Equal(t, 0, buyOrder3.CompletedAmount)
+	assert.Equal(t, 3, sellOrder.CompletedAmount)
+}
+
 func TestEngine_PartialMatch_OnSell(t *testing.T) {
 	engine := New()
 
@@ -316,7 +341,7 @@ func TestEngine_PartialSellFullBuy_OnSell(t *testing.T) {
 	engine := New()
 
 	buyOrder1 := engine.AddLimitOrder(OrderTypeBuy, 100, 5)
-	buyOrder2 := engine.AddLimitOrder(OrderTypeBuy, 102, 2)
+	buyOrder2 := engine.AddLimitOrder(OrderTypeBuy, 98, 2)
 	sellOrder := engine.AddLimitOrder(OrderTypeSell, 100, 6)
 
 	assert.Len(t, engine.AskOrders(), 1)

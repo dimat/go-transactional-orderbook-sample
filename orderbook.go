@@ -2,6 +2,7 @@ package matchingengine
 
 import (
 	rbt "github.com/emirpasic/gods/trees/redblacktree"
+	"github.com/emirpasic/gods/utils"
 	"golang.org/x/exp/slices"
 )
 
@@ -15,9 +16,13 @@ type orderbook struct {
 func newOrderBook() *orderbook {
 	return &orderbook{
 		asks:   rbt.NewWithIntComparator(),
-		bids:   rbt.NewWithIntComparator(),
+		bids:   &rbt.Tree{Comparator: reverseIntComparator},
 		orders: make(map[OrderID]*Order),
 	}
+}
+
+func reverseIntComparator(a, b interface{}) int {
+	return -utils.IntComparator(a, b)
 }
 
 func (ob orderbook) addOrderToBook(order *Order) {
